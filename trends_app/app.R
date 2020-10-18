@@ -5,10 +5,10 @@ library(lubridate)
 library(plotly)
 
 # Settings
-setwd(dir = "C:/Users/amoneva/OneDrive - De Haagse Hogeschool/research/trends_app")
+setwd(dir = "path")
 
 # Import data
-trends <- read_csv(file = "data/af_df.csv")
+trends <- read_csv(file = "af_df.csv")
 
 # Transform data
 trends = as_tibble(
@@ -51,7 +51,7 @@ trends <- trends %>%
         o_fraud
     )
 
-# Define UI for application that draws a histogram
+# Define UI for application that draws crime trends
 ui <- fluidPage(
     
     titlePanel(title = "Cybercrime trends during COVID-19"),
@@ -139,7 +139,6 @@ server <- function(
         )
         
         # Plotly version of the plot
-        
         plot_ly(
             data = trends,
             x = ~ date,
@@ -175,7 +174,6 @@ server <- function(
             )
         
         # Ggplot2 version of the plot
-        # 
         # trends %>% 
         #     ggplot(mapping = aes(
         #         x = date,
