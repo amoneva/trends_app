@@ -5,53 +5,28 @@ library(lubridate)
 library(plotly)
 
 # Settings
-setwd(dir = "path")
+setwd(dir = "dir")
 
 # Import data
-trends <- read_csv(file = "af_df.csv")
-
-# Transform data
-trends = as_tibble(
-    t(trends), 
-    rownames = "row_names"
-)
-names(trends) <- trends[1, ]
-trends <- trends[-1, ]
-trends$X1 <- dmy(paste(
-    "01-", 
-    trends$X1, 
-    sep = ""
-))
-
-trends <- trends %>% 
-    rename(
-        date = "X1",
-        t_cybercrime = "Total Cybercrime",
-        i_cybercrime = "Cybercrime Individuals",
-        o_cybercrime = "Cybercrime organisations",
-        t_fraud = "Total Fraud",
-        i_fraud = "Fraud individuals",
-        o_fraud = "Fraud organisations"
-    ) %>% 
-    mutate(
-        t_cybercrime = as.numeric(t_cybercrime),
-        i_cybercrime = as.numeric(i_cybercrime),
-        o_cybercrime = as.numeric(o_cybercrime),
-        t_fraud = as.numeric(t_fraud),
-        i_fraud = as.numeric(i_fraud),
-        o_fraud = as.numeric(o_fraud)
-    ) %>% 
-    select(
-        date,
-        t_cybercrime,
-        i_cybercrime,
-        o_cybercrime,
-        t_fraud,
-        i_fraud,
-        o_fraud
+trends <- read_csv(
+    file = "af_df_v3.csv",
+    col_types = cols(
+        i_dating_ui = col_double(),
+        i_dating_li = col_double(),
+        o_dating_ui = col_double(),
+        o_dating_li = col_double(),
+        i_ticket_ui = col_double(),
+        i_ticket_li = col_double(),
+        o_ticket_ui = col_double(),
+        o_ticket_li = col_double(),
+        i_dtod_trades_ui = col_double(),
+        i_dtod_trades_li = col_double(),
+        o_dtod_trades_ui = col_double(),
+        o_dtod_trades_li = col_double()
     )
+)
 
-# Define UI for application that draws crime trends
+# Define UI for application that draws a histogram
 ui <- fluidPage(
     
     titlePanel(title = "Cybercrime trends during COVID-19"),
@@ -62,12 +37,12 @@ ui <- fluidPage(
         
         sidebarPanel(
             "placeholder text",
-            helpText("Create crime trends line charts
-                     with data from UK Auction Fraud."),
+            helpText("Create a line chart that displays crime trends data from
+                     UK Auction Fraud and other sources."),
             
-            checkboxGroupInput(
-                inputId = "variable",
-                label = "Choose a variable to display",
+            selectInput(
+                inputId = "variable_1",
+                label = "Select a crime-related variable to display",
                 choices = list(
                     "Total cybercrime",
                     "Cybercrime affecting individuals",
@@ -75,6 +50,16 @@ ui <- fluidPage(
                     "Total fraud",
                     "Fraud affecting individuals",
                     "Fraud affecting organisations"
+                )
+            ),
+            
+            selectInput(
+                inputId = "variable_2",
+                label = "Select a routine activities variable to display",
+                choices = list(
+                    "Internet retail sales",
+                    "Passenger air travellers",
+                    "Cinema ticket sales"
                 )
             ),
             
@@ -94,9 +79,7 @@ ui <- fluidPage(
             #     align = "left"
             # ),
             
-            textOutput("selected_var"),
-            
-            textOutput("min_max"),
+            textOutput("selected_var_date"),
             
             plotlyOutput("line_chart")
         )
@@ -109,17 +92,13 @@ server <- function(
     output
 ) {
     
-    output$selected_var <- renderText({ 
+    output$selected_var_date <- renderText({ 
         paste(
             "You have selected", 
-            input$variable,
-            ". "
-        )
-    })
-    
-    output$min_max <- renderText({
-        paste(
-            "You have chosen a period spanning from",
+            input$variable_1,
+            "and ",
+            input$variable_2,
+            "in a period spanning from ",
             input$date[1],
             "to",
             input$date[2],
@@ -128,8 +107,9 @@ server <- function(
     })
     
     output$line_chart <- renderPlotly({
-        y_val <- switch(
-            input$variable,
+        
+        y_val_1 <- switch(
+            input$variable_1,
             "Total cybercrime" = trends$t_cybercrime,
             "Cybercrime affecting individuals" = trends$i_cybercrime,
             "Cybercrime affecting organisations" = trends$o_cybercrime,
@@ -138,20 +118,41 @@ server <- function(
             "Fraud affecting organisations" = trends$o_fraud
         )
         
+        y_val_2 <- switch(
+            input$variable_2,
+            "Internet retail sales" = trends$internet_retail_sales,
+            "Passenger air travellers" = trends$passenger_air_travellers,
+            "Cinema ticket sales" = trends$cinema_ticket_sales
+        )
+        
         # Plotly version of the plot
-        plot_ly(
-            data = trends,
-            x = ~ date,
-            y = ~ y_val,
-            mode = "lines"
-        ) %>% 
+        
+        plot_ly(data = trends) %>% 
+            add_trace(
+                x = ~ date,
+                y = ~ y_val_1,
+                mode = "lines",
+                yaxis = "y1",
+                # text = input$variable_1,
+                name = input$variable_1,
+                type = "scatter"
+            ) %>% 
+            add_trace(
+                x = ~ date,
+                y = ~ y_val_2,
+                mode = "lines",
+                yaxis = "y2",
+                # text = input$variable_2,
+                name = input$variable_2,
+                type = "scatter"
+            ) %>% 
             layout(
                 shapes = list(
                     type = "line",
                     x0 = dmy("01-03-2020"), 
                     x1 = dmy("01-03-2020"),
                     y0 = 0, 
-                    y1 = max(na.omit(y_val)),
+                    y1 = max(na.omit(y_val_2)),
                     line = list(
                         dash = "dot",
                         width = 1
@@ -161,37 +162,33 @@ server <- function(
                     x = dmy("01-03-2020"),
                     y = 500,
                     text = "Lockdown",
-                    ax = 50
+                    ax = -50
                 ),
                 xaxis = list(
-                    title = "Date",
+                    title = "",
                     range = c(input$date[1], input$date[2])
                 ),
                 yaxis = list(
-                    title = input$variable,
-                    range = c(0, max(y_val))
+                    title = "",
+                    range = c(0, max(y_val_1)),
+                    color = "#1f77b4",
+                    zeroline = FALSE
+                ),
+                yaxis2 = list(
+                    title = "",
+                    range = c(0, max(y_val_2)),
+                    color = "#ff7f0e",
+                    overlaying = "y", 
+                    side = "right",
+                    zeroline = FALSE
+                ),
+                legend = list(
+                    x = 0,
+                    y = 1.1,
+                    orientation = "h"
                 )
             )
         
-        # Ggplot2 version of the plot
-        # trends %>% 
-        #     ggplot(mapping = aes(
-        #         x = date,
-        #         y = y_val
-        #     )) +
-        #     geom_line(size = 1) +
-        #     geom_point() +
-        #     scale_x_date(
-        #         date_breaks = "2 months",
-        #         date_labels = "%b %y",
-        #         limits = c(input$date[1], input$date[2])
-        #     ) +
-        #     ylim(c(0, max(y_val))) +
-        #     labs(
-        #         y = input$variable,
-        #         x = "Date"
-        #     ) +
-        #     theme_classic()
     })
 }
 
