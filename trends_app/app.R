@@ -25,7 +25,7 @@ trends <- read_csv(
 )
 
 
-# Define UI for application that draws a histogram
+# Define UI for application that draws a line plot
 ui <- fluidPage(
     
     titlePanel(title = "Cybercrime and fraud trends during COVID-19"),
@@ -48,9 +48,11 @@ ui <- fluidPage(
             Note: that two trends appear to be correlated does not necessarily 
             mean that one causes the other.",
             
-            helpText("This app is an extension of the article 'Empty streets, 
-            busy Internet. A time series analysis of cybercrime and fraud trends
-            during COVID-19.' Copyright 2020 The Authors"),
+            helpText("This app is an extension of an existing paper. Please cite
+            as: Kemp, S., Buil-Gil, D., Moneva, A., Miro-Llinares, F., & 
+            Diaz-Castano, N. (2021)'Empty streets, busy Internet. A time 
+            series analysis of cybercrime and fraud trends during COVID-19. 
+            SocArXiv' Copyright 2021 The Authors"),
             
             selectInput(
                 inputId = "variable_1",
